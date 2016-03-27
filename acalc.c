@@ -176,11 +176,13 @@ int main(int argc, char **argv) {
   /* Lock screen and get visual info for gadtools */
   if (pubScreen = LockPubScreen(NULL)) {
     if (visual = GetVisualInfo(pubScreen, TAG_DONE)) {
+      int adjusty = (pubScreen->WBorTop+pubScreen->Font->ta_YSize+1) - 9; /* Infer window top border height from screen's info */
       /* Create the gadget list */
       if (gad1 = CreateContext(&glist)) {
         /* Create gadgets specify gadget kind, a Gadget, NewGadget data and extra tag info */
         for (i=0; i < 29; i++) {
           Gadgetdata[i].ng_VisualInfo = visual;
+          Gadgetdata[i].ng_TopEdge += adjusty;  /* adjust gadget's top accordingly to what screen says */
           if (gadgets[i] = gad1 = CreateGadgetA(
                   (i == 0) ? STRING_KIND : BUTTON_KIND,
                   gad1,
@@ -196,7 +198,7 @@ int main(int argc, char **argv) {
         /* Open window and specify gadget list (glist) */
         if (wp = (struct Window *)  OpenWindowTags(NULL,
                                                    WA_Left, 10, WA_Top, 15,
-                                                   WA_Width, 256, WA_Height, 96,
+                                                   WA_Width, 256, WA_Height, 96+adjusty,
                                                    WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_VANILLAKEY | IDCMP_MENUPICK,
                                                    WA_Flags, WFLG_DRAGBAR    | WFLG_DEPTHGADGET |
                                                    WFLG_CLOSEGADGET | WFLG_ACTIVATE | WFLG_SMART_REFRESH,
