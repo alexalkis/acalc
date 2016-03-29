@@ -207,10 +207,10 @@ int main(int argc, char **argv) {
                                                    WA_Title, "ACalc",
                                                    WA_PubScreenName, "Workbench",
                                                    TAG_DONE)) {
-          if (menuStrip = CreateMenus(menu1,TAG_END)) {
+          if (menuStrip = CreateMenus(menu1, TAG_END)) {
             if (LayoutMenus(menuStrip, visual, GTMN_NewLookMenus, TRUE, TAG_END)) {
               /* Attach menu to window */
-              if (SetMenuStrip (wp, menuStrip)) {
+              if (SetMenuStrip(wp, menuStrip)) {
                 GT_RefreshWindow(wp, NULL); /* Update window */
 
                 ClearAll();
@@ -257,15 +257,16 @@ void EventLoop(void) {
         ULONG ud;
         
         menuNumber = icode;
-        menuNum = MENUNUM(menuNumber);  /* Split code into menus, items, subitems */
+        /* Split code into menus, items, subitems */
+        menuNum = MENUNUM(menuNumber);
         if (menuNum != 31) {
           itemNum = ITEMNUM(menuNumber);
           subNum = SUBNUM(menuNumber);
 
-          item = ItemAddress( menuStrip, menuNumber );
+          item = ItemAddress(menuStrip, menuNumber);
 
           /* Find userdata of menuitem */
-          ud = (ULONG) GTMENUITEM_USERDATA( item );
+          ud = (ULONG) GTMENUITEM_USERDATA(item);
 
           if (ud == GD_EXIT)
             exit = TRUE;
@@ -294,8 +295,8 @@ enum GdIds HandleKey(char c)
   if (c == '*') return GD_MULT;
   if (c == '/') return GD_DIV;
   if (c == 13 || c == '=') return GD_EQUAL;  // enter/return is ='s shortcut
-  if (c == 127) return GD_AC;                // Delete key is a clear all shortcut
-  //printf("%d\n",(int)c );
+  if (c == 127) return GD_AC;          // Delete key is a clear all shortcut
+  // printf("%d\n",(int)c );
 }
 
 
@@ -432,9 +433,9 @@ void Process(enum GdIds id) {
       displayNum(res);
       break;
     default:
-      printf("Unknown id for case. %d\n",id);
+      printf("Unknown id for case. %d\n", id);
   }
-  //printf("id: %d input: %s (%f)\n", id, input,atof(input));
+  // printf("id: %d input: %s (%f)\n", id, input,atof(input));
   GT_SetGadgetAttrs(display, wp, NULL, GTST_String, input, TAG_END);
 }
 
@@ -453,7 +454,8 @@ void displayNum(double d) {
   /* } else if ( inf == 1) { */
   /*   strcpy(input, "inf"); */
   /* } else  */
-  sprintf(input, "%.15g",d);  // 15 is the DBL_DIG in machine/float.h (gcc 3.4.0)
+  sprintf(input, "%.15g",d);
+  // 15 is the DBL_DIG in machine/float.h (gcc 3.4.0)
 }
 
 void ClearAll(void) {
