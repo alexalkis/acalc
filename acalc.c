@@ -196,23 +196,23 @@ int main(int argc, char **argv) {
           }
         }
         /* Open window and specify gadget list (glist) */
-        if (wp = (struct Window *)  OpenWindowTags(NULL,
-                                                   WA_Left, 10, WA_Top, 15,
-                                                   WA_Width, 256, WA_Height, 96+adjusty,
-                                                   WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_VANILLAKEY | IDCMP_MENUPICK,
-                                                   WA_Flags, WFLG_DRAGBAR    | WFLG_DEPTHGADGET |
-                                                   WFLG_CLOSEGADGET | WFLG_ACTIVATE | WFLG_SMART_REFRESH,
-                                                   WA_NewLookMenus, TRUE,
-                                                   WA_Gadgets, glist,
-                                                   WA_Title, "ACalc",
-                                                   WA_PubScreenName, "Workbench",
-                                                   TAG_DONE)) {
+        if (wp = (struct Window *)
+            OpenWindowTags(NULL,
+                           WA_Left, 10, WA_Top, 15,
+                           WA_Width, 256, WA_Height, 96+adjusty,
+                           WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_VANILLAKEY | IDCMP_MENUPICK,
+                           WA_Flags, WFLG_DRAGBAR    | WFLG_DEPTHGADGET |
+                           WFLG_CLOSEGADGET | WFLG_ACTIVATE | WFLG_SMART_REFRESH,
+                           WA_NewLookMenus, TRUE,
+                           WA_Gadgets, glist,
+                           WA_Title, "ACalc",
+                           WA_PubScreenName, "Workbench",
+                           TAG_DONE)) {
           if (menuStrip = CreateMenus(menu1, TAG_END)) {
             if (LayoutMenus(menuStrip, visual, GTMN_NewLookMenus, TRUE, TAG_END)) {
               /* Attach menu to window */
               if (SetMenuStrip(wp, menuStrip)) {
                 GT_RefreshWindow(wp, NULL); /* Update window */
-
                 ClearAll();
                 GT_SetGadgetAttrs(display, wp, NULL, GTST_String, "0", TAG_END);
                 EventLoop();
@@ -255,9 +255,8 @@ void EventLoop(void) {
       } else if (class == IDCMP_MENUPICK) { /* Menu selected? */
         struct MenuItem *item;
         ULONG ud;
-        
-        menuNumber = icode;
 
+        menuNumber = icode;
         while(menuNumber != MENUNULL) {
           /* Split code into menus, items, subitems */
           menuNum = MENUNUM(menuNumber);
