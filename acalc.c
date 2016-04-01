@@ -257,22 +257,21 @@ void EventLoop(void) {
         ULONG ud;
         
         menuNumber = icode;
-        /* Split code into menus, items, subitems */
-        menuNum = MENUNUM(menuNumber);
-        if (menuNum != 31) {
+
+        while(menuNumber != MENUNULL) {
+          /* Split code into menus, items, subitems */
+          menuNum = MENUNUM(menuNumber);
           itemNum = ITEMNUM(menuNumber);
           subNum = SUBNUM(menuNumber);
-
           item = ItemAddress(menuStrip, menuNumber);
-
           /* Find userdata of menuitem */
           ud = (ULONG) GTMENUITEM_USERDATA(item);
-
           if (ud == GD_EXIT)
             exit = TRUE;
           else
             Process((enum GdIds) ud);
-          //printf("Menu: %hu, item: %hu, subitem: %hu (UserData: %d)\n", menuNum, itemNum, subNum, ud);
+          printf("Menu: %hu, item: %hu, subitem: %hu (UserData: %d)\n", menuNum, itemNum, subNum, ud);
+          menuNumber = item->NextSelect;
         }
       } else if (class == IDCMP_CLOSEWINDOW) {
         exit = TRUE;
