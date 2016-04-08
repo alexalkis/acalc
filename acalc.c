@@ -4,7 +4,7 @@
 **  A small calculator.  (I only wanted to check out gadtools! Sorry :P)
 */
 
-//#define USEMPFR
+#define USEMPFR
 
 #include <proto/intuition.h>
 #include <proto/gadtools.h>
@@ -157,7 +157,7 @@ int hasinput;
 int hasdecimal;
 int power_state;
 
-num base, factorSoFar, sumSoFar;
+num base, factorSoFar, sumSoFar, res, operand;
 int pendingMultiplicativeOperator;
 int pendingAdditiveOperator;
 int waitingForOperand;
@@ -189,6 +189,8 @@ int main(int argc, char **argv) {
   mpfr_init2(base, BITSACCURACY);
   mpfr_init2(factorSoFar, BITSACCURACY);
   mpfr_init2(sumSoFar, BITSACCURACY);
+  mpfr_init2(res, BITSACCURACY);
+  mpfr_init2(operand, BITSACCURACY);
 #endif
   
   /* Lock screen and get visual info for gadtools */
@@ -249,9 +251,12 @@ int main(int argc, char **argv) {
   }
 
 #ifdef USEMPFR
+  mpfr_free_cache();
   mpfr_clear(base);
   mpfr_clear(factorSoFar);
   mpfr_clear(sumSoFar);
+  mpfr_clear(res);
+  mpfr_clear(operand);
 #endif
   return(0);
 }
@@ -325,18 +330,13 @@ void getNumFromInput(num *n, char *str) {
   #ifdef USEMPFR
   char *end;
   int ret = mpfr_strtofr(*n, str, &end, 10, MPFR_RNDN);
-  mpfr_out_str(stdout, 10, 0, *n, MPFR_RNDD);
-  putchar('\n');
+  // mpfr_out_str(stdout, 10, 0, *n, MPFR_RNDD);putchar('\n');
   #else
   *n = atof(str);
   #endif
 }
 
 void Process(enum GdIds id) {
-  num res;
-#ifdef USEMPFR
-  mpfr_init2(res, BITSACCURACY);
-#endif
   switch (id) {
     case GD_N0:
     case GD_N1:
@@ -360,6 +360,7 @@ void Process(enum GdIds id) {
         input[len++] = id + '0';
         input[len]='\0';
         hasinput = TRUE;
+        getNumFromInput(&res, input);
       }
       break;
     case GD_PERIOD:
@@ -368,6 +369,8 @@ void Process(enum GdIds id) {
         input[len]='\0';
         hasinput = TRUE;
         hasdecimal = TRUE;
+        GT_SetGadgetAttrs(display, wp, NULL, GTST_String, input, TAG_END);
+        return;
       }
       break;
     case GD_BACKSPACE:
@@ -381,61 +384,81 @@ void Process(enum GdIds id) {
           waitingForOperand = TRUE;
           hasinput = FALSE;
           ClearEntry();
+        } else {
+          getNumFromInput(&res, input);
         }
       }
       break;
     case GD_SQRT:
-      getNumFromInput(&res, input);
       #ifdef USEMPFR
       mpfr_sqrt(res, res, MPFR_RNDN);
       #else
       res = sqrt(res);
       #endif
-      /*
-      res = sqrt(atof(input));
-      */
-      displayNum(res);
       break;
-      /*
     case GD_SIN:
-      res = sin(atof(input));
-      displayNum(res);
+      #ifdef USEMPFR
+      mpfr_sin(res, res, MPFR_RNDN);
+      #else
+      res = sin(res);
+      #endif
+
       //      gadgets[1]->GadgetText->IText="Ok";
       //      GT_SetGadgetAttrs(gadgets[1], wp, NULL, GTTX_Text ,"Ok", TAG_END);
       break;
     case GD_COS:
-      res = cos(atof(input));
-      displayNum(res);
+      #ifdef USEMPFR
+      mpfr_cos(res, res, MPFR_RNDN);
+      #else
+      res = cos(res);
+      #endif
       break;
     case GD_TAN:
-      res = tan(atof(input));
-      displayNum(res);
+      #ifdef USEMPFR
+      mpfr_tan(res, res, MPFR_RNDN);
+      #else
+      res = tan(res);
+      #endif
       break;
     case GD_LOG:
-      res = log10(atof(input));
-      displayNum(res);
+      #ifdef USEMPFR
+      mpfr_log10(res, res, MPFR_RNDN);
+      #else
+      res = log10(res);
+      #endif
       break;
     case GD_LN:
-      res = log(atof(input));
-      displayNum(res);
+      #ifdef USEMPFR
+      mpfr_log(res, res, MPFR_RNDN);
+      #else
+      res = log(res);
+      #endif
       break;
     case GD_RECI:
-      res = atof(input);
+      #ifdef USEMPFR
+      mpfr_ui_div(res, 1, res, MPFR_RNDN);
+      #else
       if (res != 0.0) {
         res = 1.0/res;
-        displayNum(res);
       }
+      #endif
       break;
     case GD_POWER:
-      res = atof(input);
       if (power_state == 0) {
+        #ifdef USEMPFR
+        mpfr_set(base, res, MPFR_RNDN);
+        #else
         base = res;
+        #endif
         power_state = 1;
         ClearEntry();
       } else {
+        #ifdef USEMPFR
+        mpfr_pow(res, base, res, MPFR_RNDN);
+        #else
         res = pow(base, res);
+        #endif
         power_state = 0;
-        displayNum(res);
       }
       break;
     case GD_CE:
@@ -456,49 +479,66 @@ void Process(enum GdIds id) {
       EqualClicked();
       break;
     case GD_PI:
+      #ifdef USEMPFR
+      mpfr_const_pi(res, MPFR_RNDN);
+      #else
       res = M_PI;
-      displayNum(res);
+      #endif
       break;
     case GD_E:
+      #ifdef USEMPFR
+      mpfr_set_ui(res, 1, MPFR_RNDN);
+      mpfr_exp(res, res, MPFR_RNDN);
+      #else
       res = M_E;
-      displayNum(res);
+      #endif
       break;
     case GD_CONSTANT_C:
+      #ifdef USEMPFR
+      mpfr_set_d(res, 299792458.0, MPFR_RNDN);
+      #else
       res = 299792458.0;
-      displayNum(res);
+      #endif
       break;
     case GD_CONSTANT_G:
+      #ifdef USEMPFR
+      mpfr_set_d(res, 6.67408e-11, MPFR_RNDN);
+      #else
       res = 6.67408e-11;
-      displayNum(res);
+      #endif
       break;
     case GD_CONSTANT_K:
+      #ifdef USEMPFR
+      mpfr_set_d(res, 8.9875517873681764e9, MPFR_RNDN);
+      #else
       res = 8.9875517873681764e9;
-      displayNum(res);
+      #endif
       break;
-      */
     default:
       printf("Unknown id for case. %d\n", id);
   }
   // printf("id: %d input: %s (%f)\n", id, input,atof(input));
+  displayNum(res);
   GT_SetGadgetAttrs(display, wp, NULL, GTST_String, input, TAG_END);
-  #ifdef USEMPFR
-  mpfr_clear(res);
-  #endif
 }
 
 void ClearEntry(void) {
   len = 1;
   input[len-1] = '0';
   input[len] = '\0';
+  #ifdef USEMPFR
+  mpfr_set_ui(res, 0, MPFR_RNDN);
+  #else
+  res = 0.0;
+  #endif
 }
 
 
 void displayNum(num d) {
   #ifdef USEMPFR
-  mpfr_out_str(stdout, 10, 0, d, MPFR_RNDD);
-  putchar('\n');
+  // mpfr_out_str(stdout, 10, 0, d, MPFR_RNDD); putchar('\n');
   int ret = mpfr_sprintf(input, "%.20Rg", d);
-  printf("input len = %d \"%s\" ret=%d\n", strlen(input), input, ret);
+  // printf("input len = %d \"%s\" ret=%d\n", strlen(input), input, ret);
   #else
   /* commented out, doesn't work :( */
   /* int inf = isinf(d); */
@@ -522,14 +562,19 @@ void ClearAll(void) {
   mpfr_set_ui(base, 0, MPFR_RNDN);
   mpfr_set_ui(sumSoFar, 0, MPFR_RNDN);
   mpfr_set_ui(factorSoFar, 0, MPFR_RNDN);
+  mpfr_set_ui(res, 0, MPFR_RNDN);
   #else
-  base = sumSoFar = factorSoFar = 0.0;
+  res = base = sumSoFar = factorSoFar = 0.0;
   #endif
 }
 
 void AdditiveOperator(enum GdIds id) {
-  num operand;
-  getNumFromInput(&operand, input);
+
+  #ifdef USEMPFR
+  mpfr_set(operand, res, MPFR_RNDN);
+  #else
+  operand = res;
+  #endif
 
   if (pendingMultiplicativeOperator) {
     if (!calculate(operand, pendingMultiplicativeOperator)) {
@@ -552,7 +597,11 @@ void AdditiveOperator(enum GdIds id) {
       abortOperation();
       return;
     }
-    displayNum(sumSoFar);
+    #ifdef USEMPFR
+    mpfr_set(res, sumSoFar, MPFR_RNDN);
+    #else
+    res = sumSoFar;
+    #endif
   } else {
     #ifdef USEMPFR
     mpfr_set(sumSoFar, operand, MPFR_RNDN);
@@ -565,15 +614,23 @@ void AdditiveOperator(enum GdIds id) {
 }
 
 void MultiplicativeOperator(enum GdIds id) {
-  num operand;
-  getNumFromInput(&operand, input);
+
+  #ifdef USEMPFR
+  mpfr_set(operand, res, MPFR_RNDN);
+  #else
+  operand = res;
+  #endif
 
   if (pendingMultiplicativeOperator) {
     if (!calculate(operand, pendingMultiplicativeOperator)) {
       abortOperation();
       return;
     }
-    displayNum(factorSoFar);
+    #ifdef USEMPFR
+    mpfr_set(res, factorSoFar, MPFR_RNDN);
+    #else
+    res = factorSoFar;
+    #endif
   } else {
     #ifdef USEMPFR
     mpfr_set(factorSoFar, operand, MPFR_RNDN);
@@ -587,8 +644,11 @@ void MultiplicativeOperator(enum GdIds id) {
 }
 
 void EqualClicked(void) {
-  num operand;
-  getNumFromInput(&operand, input);
+  #ifdef USEMPFR
+  mpfr_set(operand, res, MPFR_RNDN);
+  #else
+  operand = res;
+  #endif
 
   if (pendingMultiplicativeOperator) {
     if (!calculate(operand, pendingMultiplicativeOperator)) {
@@ -619,10 +679,11 @@ void EqualClicked(void) {
     #endif
   }
 
-  displayNum(sumSoFar);
   #ifdef USEMPFR
+  mpfr_set(res, sumSoFar, MPFR_RNDN);
   mpfr_set_ui(sumSoFar, 0, MPFR_RNDN);
   #else
+  res = sumSoFar;
   sumSoFar = 0;
   #endif
   waitingForOperand = TRUE;
