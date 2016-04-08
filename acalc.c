@@ -1,8 +1,11 @@
-// -*- compile-command: "m68k-amigaos-gcc -s -noixemul -Os -o acalc acalc.c -lm" -*-
+// -*- compile-command: "m68k-amigaos-gcc -s -noixemul -Os -o acalc acalc.c -lmpfr -lgmp" -*-
 
 /*
 **  A small calculator.  (I only wanted to check out gadtools! Sorry :P)
 */
+
+//#define USEMPFR
+
 #include <proto/intuition.h>
 #include <proto/gadtools.h>
 #include <proto/exec.h>
@@ -13,6 +16,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+
+#ifdef USEMPFR
+#include <gmp.h>
+#include <mpfr.h>
+typedef mpfr_t num;
+#define BITSACCURACY (80)
+#else
+typedef double num;
+#endif
 
 enum GdIds {
   GD_N0 = 0,
@@ -144,8 +156,8 @@ int len;
 int hasinput;
 int hasdecimal;
 int power_state;
-double base;
-double factorSoFar, sumSoFar;
+
+num base, factorSoFar, sumSoFar;
 int pendingMultiplicativeOperator;
 int pendingAdditiveOperator;
 int waitingForOperand;
@@ -163,8 +175,8 @@ void EqualClicked(void);
 void AdditiveOperator(enum GdIds id);
 void MultiplicativeOperator(enum GdIds id);
 void abortOperation(void);
-void displayNum(double d);
-int calculate(double rightOperand, enum GdIds pendingOperator);
+void displayNum(num d);
+int calculate(num rightOperand, enum GdIds pendingOperator);
 void EventLoop(void);
 
 int main(int argc, char **argv) {
@@ -173,6 +185,12 @@ int main(int argc, char **argv) {
   struct Gadget *glist = NULL, *gad1;
   int i;
 
+#ifdef USEMPFR
+  mpfr_init2(base, BITSACCURACY);
+  mpfr_init2(factorSoFar, BITSACCURACY);
+  mpfr_init2(sumSoFar, BITSACCURACY);
+#endif
+  
   /* Lock screen and get visual info for gadtools */
   if (pubScreen = LockPubScreen(NULL)) {
     if (visual = GetVisualInfo(pubScreen, TAG_DONE)) {
@@ -229,6 +247,12 @@ int main(int argc, char **argv) {
     }
     UnlockPubScreen(NULL, pubScreen);
   }
+
+#ifdef USEMPFR
+  mpfr_clear(base);
+  mpfr_clear(factorSoFar);
+  mpfr_clear(sumSoFar);
+#endif
   return(0);
 }
 
@@ -297,10 +321,22 @@ enum GdIds HandleKey(char c)
   // printf("%d\n",(int)c );
 }
 
+void getNumFromInput(num *n, char *str) {
+  #ifdef USEMPFR
+  char *end;
+  int ret = mpfr_strtofr(*n, str, &end, 10, MPFR_RNDN);
+  mpfr_out_str(stdout, 10, 0, *n, MPFR_RNDD);
+  putchar('\n');
+  #else
+  *n = atof(str);
+  #endif
+}
 
 void Process(enum GdIds id) {
-  double res;
-
+  num res;
+#ifdef USEMPFR
+  mpfr_init2(res, BITSACCURACY);
+#endif
   switch (id) {
     case GD_N0:
     case GD_N1:
@@ -349,9 +385,18 @@ void Process(enum GdIds id) {
       }
       break;
     case GD_SQRT:
+      getNumFromInput(&res, input);
+      #ifdef USEMPFR
+      mpfr_sqrt(res, res, MPFR_RNDN);
+      #else
+      res = sqrt(res);
+      #endif
+      /*
       res = sqrt(atof(input));
+      */
       displayNum(res);
       break;
+      /*
     case GD_SIN:
       res = sin(atof(input));
       displayNum(res);
@@ -430,11 +475,15 @@ void Process(enum GdIds id) {
       res = 8.9875517873681764e9;
       displayNum(res);
       break;
+      */
     default:
       printf("Unknown id for case. %d\n", id);
   }
   // printf("id: %d input: %s (%f)\n", id, input,atof(input));
   GT_SetGadgetAttrs(display, wp, NULL, GTST_String, input, TAG_END);
+  #ifdef USEMPFR
+  mpfr_clear(res);
+  #endif
 }
 
 void ClearEntry(void) {
@@ -444,7 +493,13 @@ void ClearEntry(void) {
 }
 
 
-void displayNum(double d) {
+void displayNum(num d) {
+  #ifdef USEMPFR
+  mpfr_out_str(stdout, 10, 0, d, MPFR_RNDD);
+  putchar('\n');
+  int ret = mpfr_sprintf(input, "%.20Rg", d);
+  printf("input len = %d \"%s\" ret=%d\n", strlen(input), input, ret);
+  #else
   /* commented out, doesn't work :( */
   /* int inf = isinf(d); */
   /* if ( inf == -1 ) { */
@@ -454,6 +509,7 @@ void displayNum(double d) {
   /* } else  */
   sprintf(input, "%.15g",d);
   // 15 is the DBL_DIG in machine/float.h (gcc 3.4.0)
+  #endif
 }
 
 void ClearAll(void) {
@@ -462,19 +518,32 @@ void ClearAll(void) {
   pendingAdditiveOperator = 0;
   pendingMultiplicativeOperator = 0;
   waitingForOperand = TRUE;
-  sumSoFar = factorSoFar = 0.0;
+  #ifdef USEMPFR
+  mpfr_set_ui(base, 0, MPFR_RNDN);
+  mpfr_set_ui(sumSoFar, 0, MPFR_RNDN);
+  mpfr_set_ui(factorSoFar, 0, MPFR_RNDN);
+  #else
+  base = sumSoFar = factorSoFar = 0.0;
+  #endif
 }
 
 void AdditiveOperator(enum GdIds id) {
-  double operand = atof(input);
+  num operand;
+  getNumFromInput(&operand, input);
+
   if (pendingMultiplicativeOperator) {
     if (!calculate(operand, pendingMultiplicativeOperator)) {
       abortOperation();
       return;
     }
     displayNum(factorSoFar);
+    #ifdef USEMPFR
+    mpfr_set(operand, factorSoFar, MPFR_RNDN);
+    mpfr_set_ui(factorSoFar, 0, MPFR_RNDN);
+    #else
     operand = factorSoFar;
     factorSoFar = 0.0;
+    #endif
     pendingMultiplicativeOperator = 0;
   }
 
@@ -485,14 +554,20 @@ void AdditiveOperator(enum GdIds id) {
     }
     displayNum(sumSoFar);
   } else {
+    #ifdef USEMPFR
+    mpfr_set(sumSoFar, operand, MPFR_RNDN);
+    #else
     sumSoFar = operand;
+    #endif
   }
   pendingAdditiveOperator = id;
   waitingForOperand = TRUE;
 }
 
 void MultiplicativeOperator(enum GdIds id) {
-  double operand = atof(input);
+  num operand;
+  getNumFromInput(&operand, input);
+
   if (pendingMultiplicativeOperator) {
     if (!calculate(operand, pendingMultiplicativeOperator)) {
       abortOperation();
@@ -500,7 +575,11 @@ void MultiplicativeOperator(enum GdIds id) {
     }
     displayNum(factorSoFar);
   } else {
+    #ifdef USEMPFR
+    mpfr_set(factorSoFar, operand, MPFR_RNDN);
+    #else
     factorSoFar = operand;
+    #endif
   }
 
   pendingMultiplicativeOperator = id;
@@ -508,15 +587,21 @@ void MultiplicativeOperator(enum GdIds id) {
 }
 
 void EqualClicked(void) {
-  double operand = atof(input);
+  num operand;
+  getNumFromInput(&operand, input);
 
   if (pendingMultiplicativeOperator) {
     if (!calculate(operand, pendingMultiplicativeOperator)) {
       abortOperation();
       return;
     }
+    #ifdef USEMPFR
+    mpfr_set(operand, factorSoFar, MPFR_RNDN);
+    mpfr_set_ui(factorSoFar, 0, MPFR_RNDN);
+    #else
     operand = factorSoFar;
     factorSoFar = 0.0;
+    #endif
     pendingMultiplicativeOperator = 0;
   }
 
@@ -527,11 +612,19 @@ void EqualClicked(void) {
     }
     pendingAdditiveOperator = 0;
   } else {
+    #ifdef USEMPFR
+    mpfr_set(sumSoFar, operand, MPFR_RNDN);
+    #else
     sumSoFar = operand;
+    #endif
   }
 
   displayNum(sumSoFar);
+  #ifdef USEMPFR
+  mpfr_set_ui(sumSoFar, 0, MPFR_RNDN);
+  #else
   sumSoFar = 0;
+  #endif
   waitingForOperand = TRUE;
 }
 
@@ -540,17 +633,33 @@ void abortOperation(void) {
   strcpy(input, "####");
 }
 
-int calculate(double rightOperand, enum GdIds pendingOperator) {
+int calculate(num rightOperand, enum GdIds pendingOperator) {
   if (pendingOperator == GD_PLUS) {
+    #ifdef USEMPFR
+    mpfr_add(sumSoFar, sumSoFar, rightOperand, MPFR_RNDN);
+    #else
     sumSoFar += rightOperand;
+    #endif
   } else if (pendingOperator == GD_MINUS) {
+    #ifdef USEMPFR
+    mpfr_sub(sumSoFar, sumSoFar, rightOperand, MPFR_RNDN);
+    #else
     sumSoFar -= rightOperand;
+    #endif
   } else if (pendingOperator == GD_MULT) {
+    #ifdef USEMPFR
+    mpfr_mul(factorSoFar, factorSoFar, rightOperand, MPFR_RNDN);
+    #else
     factorSoFar *= rightOperand;
+    #endif
   } else if (pendingOperator == GD_DIV) {
+    #ifdef USEMPFR
+    mpfr_div(factorSoFar, factorSoFar, rightOperand, MPFR_RNDN);
+    #else
     if (rightOperand == 0.0)
       return FALSE;
     factorSoFar /= rightOperand;
+    #endif
   }
   return TRUE;
 }
