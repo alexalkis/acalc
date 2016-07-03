@@ -164,9 +164,11 @@ int waitingForOperand;
 struct Window *wp;
 struct Gadget *display;
 struct Gadget *gadgets[29];
+struct Gadget *glist = NULL;
 struct Menu *menuStrip;
 
 /* Prototyping */
+void ReAddGadgets(void);
 void Process(enum GdIds id);
 enum GdIds HandleKey(char c);
 void ClearEntry(void);
@@ -182,7 +184,7 @@ void EventLoop(void);
 int main(int argc, char **argv) {
   APTR visual;
   struct Screen *pubScreen;
-  struct Gadget *glist = NULL, *gad1;
+  struct Gadget *gad1;
   int i;
 
 #ifdef USEMPFR
@@ -259,6 +261,35 @@ int main(int argc, char **argv) {
   mpfr_clear(operand);
 #endif
   return(0);
+}
+
+void ReAddGadgets(void) {
+  struct Gadget *pgad;
+  int i;
+
+  if (glist) {
+    RemoveGList(wp, glist, -1);
+    FreeGadgets(glist);
+  }
+
+  pgad = CreateContext(&glist);  /* ContextData ! */
+
+  for (i=0; i < 29; i++) {
+    if (gadgets[i] = pgad = CreateGadgetA(
+            (i == 0) ? STRING_KIND : BUTTON_KIND,
+            pgad,
+            &Gadgetdata[i],
+            (i == 0) ? (struct TagItem *)&GadgetTags[i]: NULL)) {
+      if (i == 0) {
+        display = pgad;
+      }
+    } else {
+      printf("Failed to create gadget %d.\n", i);
+    }
+  }
+  AddGList(wp, glist, -1, -1, NULL);
+  RefreshGList(glist, wp, NULL, -1);
+  GT_RefreshWindow(wp, NULL);
 }
 
 void EventLoop(void) {
@@ -402,7 +433,12 @@ void Process(enum GdIds id) {
       #else
       res = sin(res);
       #endif
-
+      Gadgetdata[1].ng_GadgetText = "new";
+      ReAddGadgets();
+      //RefreshGList(gadgets[0], wp, NULL, -1);
+      //GT_RefreshWindow(wp, NULL);
+      //printf("new gadget pos: %d with text \"%s\"\n", pos, gadgets[1]->GadgetText->IText);
+      
       //      gadgets[1]->GadgetText->IText="Ok";
       //      GT_SetGadgetAttrs(gadgets[1], wp, NULL, GTTX_Text ,"Ok", TAG_END);
       break;
