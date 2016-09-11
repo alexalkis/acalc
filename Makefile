@@ -9,7 +9,7 @@ acalc: acalc.c
 	ls -l acalc
 
 release: acalc
-	$(ARC) a acalc-$(GIT_VERSION).lha acalc
+	$(ARC) a -o6 acalc-$(GIT_VERSION).lha acalc
 
 clean:
 	rm -f acalc acalc*.lha
