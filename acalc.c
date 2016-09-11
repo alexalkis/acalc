@@ -35,7 +35,12 @@ typedef mpfr_t num;
 typedef double num;
 #endif
 
+#ifdef GITVERSION
 BYTE version[] = "\0$VER: acalc 1.0 (" __DATE__ " "GITVERSION")";
+#else
+BYTE version[] = "\0$VER: acalc 1.0 (" __DATE__ ")";
+#endif
+  
 
 enum GdIds {
   GD_N0 = 0,
