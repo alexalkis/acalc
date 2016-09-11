@@ -5,7 +5,7 @@ CFLAGS = -s -noixemul -Os -lmpfr -lgmp -lm -DGITVERSION=\"$(GIT_VERSION)\"
 
 
 acalc: acalc.c
-	$(CC) -o acalc acalc.c $(CFLAGS) -DVERSION=
+	$(CC) -o acalc acalc.c $(CFLAGS)
 	ls -l acalc
 
 clean:
