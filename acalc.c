@@ -35,6 +35,8 @@ typedef mpfr_t num;
 typedef double num;
 #endif
 
+BYTE version[] = "\0$VER: acalc 1.0 (" __DATE__ ")";
+
 enum GdIds {
   GD_N0 = 0,
   GD_N1,
