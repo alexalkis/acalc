@@ -65,12 +65,14 @@ enum GdIds {
   GD_EQUAL,
   GD_DIV,
   GD_E,
-
+  GD_FACTORIAL,
+  GD_SQUARE,
   GD_BACKSPACE,
 
   GD_CONSTANT_C,
   GD_CONSTANT_G,
   GD_CONSTANT_K,
+  GD_CONSTANT_SECONDS_IN_YEAR,
 
   GD_MODE_SIMPLE,
   GD_MODE_SCIENTIFIC,
@@ -98,7 +100,7 @@ struct NewMenu menu1[] =
   {  NM_ITEM, "c-Speed of light",      0 , 0,                           0, (void *) GD_CONSTANT_C},
   {  NM_ITEM, "G-Gravitational",       0 , 0,                           0, (void *) GD_CONSTANT_G},
   {  NM_ITEM, "k-Coulomb's constant",  0 , 0,                           0, (void *) GD_CONSTANT_K},
- 
+  {  NM_ITEM, "Seconds in a year",     0 , 0,                           0, (void *) GD_CONSTANT_SECONDS_IN_YEAR},
   { NM_END, NULL, 0 , 0, 0, 0}
 };
 
@@ -111,6 +113,8 @@ struct NewMenu menu1[] =
 #define BSHEIGHT BHEIGHT
 #define BHAIR   (4)
 #define BVAIR   (BHAIR)
+
+#define TOTALNUMOFGADGETS (31)
 
 /* Data for gadget structures */
 struct NewGadget Gadgetdata[] = {
@@ -151,6 +155,15 @@ struct NewGadget Gadgetdata[] = {
   BSTARTX+(BSWIDTH+BHAIR)*2+BHAIR+(BWIDTH+BHAIR)*2, BSTARTY+(BHEIGHT+BVAIR)*3, BWIDTH, BHEIGHT, (UBYTE *)"=", &topaz8, GD_EQUAL, PLACETEXT_IN, NULL,NULL,
   BSTARTX+(BSWIDTH+BHAIR)*2+2*BHAIR+(BWIDTH+BHAIR)*3, BSTARTY+(BHEIGHT+BVAIR)*3, BWIDTH, BHEIGHT, (UBYTE *)"/", &topaz8, GD_DIV, PLACETEXT_IN, NULL,NULL,
   BSTARTX+(BSWIDTH+BHAIR)*2+2*BHAIR+(BWIDTH+BHAIR)*4, BSTARTY+(BHEIGHT+BVAIR)*3, BWIDTH, BHEIGHT, (UBYTE *)"e", &topaz8, GD_E, PLACETEXT_IN, NULL,NULL,
+
+  /* fifth row */
+  BSTARTX,                                          BSTARTY+(BHEIGHT+BVAIR)*4, BSWIDTH, BSHEIGHT, (UBYTE *)"x!", &topaz8, GD_FACTORIAL, PLACETEXT_IN, NULL,NULL,
+  BSTARTX+(BSWIDTH+BHAIR),                          BSTARTY+(BHEIGHT+BVAIR)*4, BSWIDTH, BSHEIGHT, (UBYTE *)"x^2", &topaz8, GD_SQUARE, PLACETEXT_IN, NULL,NULL,
+  //  BSTARTX+(BSWIDTH+BHAIR)*2+BHAIR,                  BSTARTY+(BHEIGHT+BVAIR)*4, BWIDTH, BHEIGHT, (UBYTE *)"0", &topaz8, GD_N0, PLACETEXT_IN, NULL,NULL,
+  //BSTARTX+(BSWIDTH+BHAIR)*2+BHAIR+(BWIDTH+BHAIR),   BSTARTY+(BHEIGHT+BVAIR)*4, BWIDTH, BHEIGHT, (UBYTE *)".", &topaz8, GD_PERIOD, PLACETEXT_IN, NULL,NULL,
+  //BSTARTX+(BSWIDTH+BHAIR)*2+BHAIR+(BWIDTH+BHAIR)*2, BSTARTY+(BHEIGHT+BVAIR)*4, BWIDTH, BHEIGHT, (UBYTE *)"=", &topaz8, GD_EQUAL, PLACETEXT_IN, NULL,NULL,
+  //BSTARTX+(BSWIDTH+BHAIR)*2+2*BHAIR+(BWIDTH+BHAIR)*3, BSTARTY+(BHEIGHT+BVAIR)*4, BWIDTH, BHEIGHT, (UBYTE *)"/", &topaz8, GD_DIV, PLACETEXT_IN, NULL,NULL,
+  //BSTARTX+(BSWIDTH+BHAIR)*2+2*BHAIR+(BWIDTH+BHAIR)*4, BSTARTY+(BHEIGHT+BVAIR)*4, BWIDTH, BHEIGHT, (UBYTE *)"e", &topaz8, GD_E, PLACETEXT_IN, NULL,NULL,
 };
 
 /* Extra information for gadgets using Tags */
@@ -172,7 +185,7 @@ int pendingAdditiveOperator;
 int waitingForOperand;
 struct Window *wp;
 struct Gadget *display;
-struct Gadget *gadgets[29];
+struct Gadget *gadgets[TOTALNUMOFGADGETS];
 struct Gadget *glist = NULL;
 struct Menu *menuStrip;
 
@@ -211,7 +224,7 @@ int main(int argc, char **argv) {
       /* Create the gadget list */
       if (gad1 = CreateContext(&glist)) {
         /* Create gadgets specify gadget kind, a Gadget, NewGadget data and extra tag info */
-        for (i=0; i < 29; i++) {
+        for (i=0; i < TOTALNUMOFGADGETS; i++) {
           Gadgetdata[i].ng_VisualInfo = visual;
           Gadgetdata[i].ng_TopEdge += adjusty;  /* adjust gadget's top accordingly to what screen says */
           if (gadgets[i] = gad1 = CreateGadgetA(
@@ -230,7 +243,7 @@ int main(int argc, char **argv) {
         if (wp = (struct Window *)
             OpenWindowTags(NULL,
                            WA_Left, 10, WA_Top, 15,
-                           WA_Width, 256, WA_Height, 96+adjusty,
+                           WA_Width, 256, WA_Height, 96+17+adjusty,
                            WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_VANILLAKEY | IDCMP_MENUPICK,
                            WA_Flags, WFLG_DRAGBAR    | WFLG_DEPTHGADGET |
                            WFLG_CLOSEGADGET | WFLG_ACTIVATE | WFLG_SMART_REFRESH,
@@ -283,7 +296,7 @@ void ReAddGadgets(void) {
 
   pgad = CreateContext(&glist);  /* ContextData ! */
 
-  for (i=0; i < 29; i++) {
+  for (i=0; i < TOTALNUMOFGADGETS; i++) {
     if (gadgets[i] = pgad = CreateGadgetA(
             (i == 0) ? STRING_KIND : BUTTON_KIND,
             pgad,
@@ -338,7 +351,9 @@ void EventLoop(void) {
             exit = TRUE;
           else
             Process((enum GdIds) ud);
+          #ifndef NDEBUG
           printf("Menu: %hu, item: %hu, subitem: %hu (UserData: %d)\n", menuNum, itemNum, subNum, ud);
+          #endif
           menuNumber = item->NextSelect;
         }
       } else if (class == IDCMP_CLOSEWINDOW) {
@@ -361,6 +376,7 @@ enum GdIds HandleKey(char c)
   if (c == '-') return GD_MINUS;
   if (c == '*') return GD_MULT;
   if (c == '/') return GD_DIV;
+  if (c == '!') return GD_FACTORIAL;
   if (c == 13 || c == '=') return GD_EQUAL;  // enter/return is ='s shortcut
   if (c == 127) return GD_AC;          // Delete key is a clear all shortcut
   // printf("%d\n",(int)c );
@@ -377,6 +393,8 @@ void getNumFromInput(num *n, char *str) {
 }
 
 void Process(enum GdIds id) {
+  unsigned long int fac;
+
   switch (id) {
     case GD_N0:
     case GD_N1:
@@ -442,14 +460,8 @@ void Process(enum GdIds id) {
       #else
       res = sin(res);
       #endif
-      Gadgetdata[1].ng_GadgetText = "new";
-      ReAddGadgets();
-      //RefreshGList(gadgets[0], wp, NULL, -1);
-      //GT_RefreshWindow(wp, NULL);
-      //printf("new gadget pos: %d with text \"%s\"\n", pos, gadgets[1]->GadgetText->IText);
-      
-      //      gadgets[1]->GadgetText->IText="Ok";
-      //      GT_SetGadgetAttrs(gadgets[1], wp, NULL, GTTX_Text ,"Ok", TAG_END);
+      //Gadgetdata[1].ng_GadgetText = "new";
+      //ReAddGadgets();
       break;
     case GD_COS:
       #ifdef USEMPFR
@@ -506,6 +518,37 @@ void Process(enum GdIds id) {
         power_state = 0;
       }
       break;
+    case GD_FACTORIAL:
+      #ifdef USEMPFR
+      fac = mpfr_get_ui(res, MPFR_RNDN);
+      //printf("fac of %d\n", fac);
+      mpfr_fac_ui(res, fac, MPFR_RNDN);
+      #else
+      if (res < 0) {
+        res = sqrt(-1);
+        break;
+      }
+      fac = (unsigned long int)res;
+      if (fac > 170) {
+        res = 1.0/0;
+        break;
+      }
+      res = 1.0;
+      if (fac == 0 || fac == 1)
+        break;
+      while (fac > 1) {
+        res *=fac;
+        --fac;
+      }
+      #endif
+      break;
+    case GD_SQUARE:
+      #ifdef USEMPFR
+      mpfr_mul(res, res, res, MPFR_RNDN);
+      #else
+      res *=res;
+      #endif
+      break;
     case GD_CE:
       ClearEntry();
       break;
@@ -559,8 +602,19 @@ void Process(enum GdIds id) {
       res = 8.9875517873681764e9;
       #endif
       break;
+    case GD_CONSTANT_SECONDS_IN_YEAR:
+      #ifdef USEMPFR
+      mpfr_set_d(res, 31557600, MPFR_RNDN);
+      #else
+      res = 31557600;
+      #endif
+      break;
     default:
+      #ifndef NDEBUG
       printf("Unknown id for case. %d\n", id);
+      #else
+      ;
+      #endif
   }
   // printf("id: %d input: %s (%f)\n", id, input,atof(input));
   displayNum(res);
@@ -614,7 +668,6 @@ void ClearAll(void) {
 }
 
 void AdditiveOperator(enum GdIds id) {
-
   #ifdef USEMPFR
   mpfr_set(operand, res, MPFR_RNDN);
   #else
