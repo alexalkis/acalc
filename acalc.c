@@ -1,5 +1,5 @@
 // -*- compile-command: "m68k-amigaos-gcc -s -noixemul -Os -o acalc acalc.c -lmpfr -lgmp" -*-
-
+// for sas c try: sc math=standard link acalc.c
 /*
 **  A small calculator.  (I only wanted to check out gadtools! Sorry :P)
 */
@@ -11,11 +11,20 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <intuition/intuition.h>
+#include <intuition/gadgetclass.h>
 #include <libraries/gadtools.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+
+#ifdef __SASC
+#define M_E             2.7182818284590452354   /* e */
+#define M_PI            3.14159265358979323846  /* pi */
+#ifdef USEMPFR
+#undef USEMPFR
+#endif
+#endif
 
 #ifdef USEMPFR
 #include <gmp.h>
