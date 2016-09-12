@@ -173,6 +173,44 @@ struct NewGadget Gadgetdata[] = {
   //BSTARTX+(BSWIDTH+BHAIR)*2+2*BHAIR+(BWIDTH+BHAIR)*4, BSTARTY+(BHEIGHT+BVAIR)*4, BWIDTH, BHEIGHT, (UBYTE *)"e", &topaz8, GD_E, PLACETEXT_IN, NULL,NULL,
 };
 
+
+/* Image data, plane-by-plane, and one scanline at a time */
+UWORD *imgSquareRoot=NULL;
+UWORD fImageData[] = {
+	/* Plane 1 */
+  0x0000,0x0000,0x0200,
+  0x0000,0x0000,0x0600,
+  0x0000,0x07ff,0x0600,
+  0x0000,0x0c00,0x0600,
+  0x0018,0x0c00,0x0600,
+  0x002c,0x1800,0x0600,
+  0x0006,0x1800,0x0600,
+  0x0003,0x3000,0x0600,
+  0x0001,0xb000,0x0600,
+  0x0000,0xe000,0x0600,
+  0x0000,0x6000,0x0600,
+  0x0000,0x0000,0x0600,
+  0x7fff,0xffff,0xfe00,
+	/* Plane 2 */
+  0xffff,0xffff,0xfc00,
+  0xc000,0x0000,0x0000,
+  0xc000,0x0000,0x0000,
+  0xc000,0x0000,0x0000,
+  0xc000,0x0000,0x0000,
+  0xc000,0x0000,0x0000,
+  0xc000,0x0000,0x0000,
+  0xc000,0x0000,0x0000,
+  0xc000,0x0000,0x0000,
+  0xc000,0x0000,0x0000,
+  0xc000,0x0000,0x0000,
+  0xc000,0x0000,0x0000,
+  0x8000,0x0000,0x0000
+};
+
+
+struct Image Image = {0,0,39,13,2,NULL,0x03,0,NULL};
+
+
 /* Extra information for gadgets using Tags */
 ULONG GadgetTags[] = {
   (GTST_MaxChars), 256, (STRINGA_Justification), (GACT_STRINGRIGHT), (TAG_DONE)
@@ -210,12 +248,28 @@ void displayNum(num d);
 int calculate(num rightOperand, enum GdIds pendingOperator);
 void EventLoop(void);
 
+/* Gcc lacks the __chip fake keyword to place data in chip */
+/* So, we move data to chip memory here */
+void MoveDataToChip(void) {
+  int i;
+  if (imgSquareRoot  = (UWORD *)AllocMem(sizeof(fImageData), MEMF_CHIP)) {
+    for (i=0; i<sizeof(fImageData)/sizeof(UWORD);i++)
+      imgSquareRoot[i]=fImageData[i];
+    Image.ImageData = imgSquareRoot;
+  }
+}
+
 int main(int argc, char **argv) {
   APTR visual;
   struct Screen *pubScreen;
   struct Gadget *gad1;
+  struct Gadget *sqrt;
+  UWORD sqrtFlags;
+  APTR sqrtSelectRender;
+  APTR sqrtGadgetRender;
   int i;
 
+  MoveDataToChip();
 #ifdef USEMPFR
   mpfr_init2(base, BITSACCURACY);
   mpfr_init2(factorSoFar, BITSACCURACY);
@@ -230,6 +284,7 @@ int main(int argc, char **argv) {
       int adjusty = (pubScreen->WBorTop+pubScreen->Font->ta_YSize+1) - 9; /* Infer window top border height from screen's info */
       /* Create the gadget list */
       if (gad1 = CreateContext(&glist)) {
+        printf("%X\n", glist);
         /* Create gadgets specify gadget kind, a Gadget, NewGadget data and extra tag info */
         for (i=0; i < TOTALNUMOFGADGETS; i++) {
           Gadgetdata[i].ng_VisualInfo = visual;
@@ -241,6 +296,15 @@ int main(int argc, char **argv) {
                   (i == 0) ? (struct TagItem *)&GadgetTags[i]: NULL)) {
             if (i == 0) {
               display = gad1;
+            }
+            if (Gadgetdata[i].ng_GadgetID == GD_SQRT && imgSquareRoot) {
+              sqrt = gadgets[i];
+              sqrtGadgetRender = gadgets[i]->GadgetRender;
+              sqrtSelectRender = gadgets[i]->SelectRender;
+              sqrtFlags = gadgets[i]->Flags;
+              gadgets[i]->Flags = GFLG_GADGIMAGE;
+              gadgets[i]->GadgetRender = &Image;
+              gadgets[i]->SelectRender = NULL;
             }
           } else {
             if (argc > 0) printf("Failed to create gadget %d.\n", i);
@@ -272,8 +336,12 @@ int main(int argc, char **argv) {
             }
             FreeMenus(menuStrip);
           }
+          //RemoveGList(wp, glist, -1);  //probably don't need this cause I close the window
           CloseWindow(wp);
         }
+        sqrt->Flags = sqrtFlags;
+        sqrt->SelectRender = sqrtSelectRender;
+        sqrt->GadgetRender = sqrtGadgetRender;
         FreeGadgets(glist);
       }
       FreeVisualInfo(visual);
@@ -289,9 +357,11 @@ int main(int argc, char **argv) {
   mpfr_clear(res);
   mpfr_clear(operand);
 #endif
+  if (imgSquareRoot)
+    FreeMem(imgSquareRoot, sizeof(fImageData));
   return(0);
 }
-
+/*
 void ReAddGadgets(void) {
   struct Gadget *pgad;
   int i;
@@ -301,7 +371,7 @@ void ReAddGadgets(void) {
     FreeGadgets(glist);
   }
 
-  pgad = CreateContext(&glist);  /* ContextData ! */
+  pgad = CreateContext(&glist); 
 
   for (i=0; i < TOTALNUMOFGADGETS; i++) {
     if (gadgets[i] = pgad = CreateGadgetA(
@@ -320,6 +390,7 @@ void ReAddGadgets(void) {
   RefreshGList(glist, wp, NULL, -1);
   GT_RefreshWindow(wp, NULL);
 }
+*/
 
 void EventLoop(void) {
   ULONG signals;
