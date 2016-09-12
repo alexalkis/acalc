@@ -393,7 +393,7 @@ void getNumFromInput(num *n, char *str) {
   #ifdef USEMPFR
   char *end;
   int ret = mpfr_strtofr(*n, str, &end, 10, MPFR_RNDN);
-  // mpfr_out_str(stdout, 10, 0, *n, MPFR_RNDD);putchar('\n');
+  //printf("getNumFromInput: ");mpfr_out_str(stdout, 10, 0, *n, MPFR_RNDD);putchar('\n');
   #else
   *n = atof(str);
   #endif
@@ -413,23 +413,41 @@ void Process(enum GdIds id) {
     case GD_N7:
     case GD_N8:
     case GD_N9:
-      if (id == GD_N0 && len == 1 && input[0] == '0')
-        return;
+      //if (id == GD_N0 && len == 1 && input[0] == '0')
+      //return;
       if (waitingForOperand) {
         ClearEntry();
         waitingForOperand = FALSE;
       }
+      len = strlen(input);
       if (len < MAXLEN) {
-        if (len == 1 && input[0] == '0')
-          --len;
+        //if (len == 1 && input[0] == '0')
+        //--len;
         input[len++] = id + '0';
         input[len]='\0';
         hasinput = TRUE;
         getNumFromInput(&res, input);
+        #ifdef USEMPFR
+        if (mpfr_zero_p(res)) {
+          GT_SetGadgetAttrs(display, wp, NULL, GTST_String, input, TAG_END);
+          return;
+        }
+        #else
+        if (res == 0.0)
+          return;
+        #endif
+        displayNum(res);
       }
       break;
     case GD_PERIOD:
+      if (waitingForOperand) {
+        ClearEntry();
+        waitingForOperand = FALSE;
+      }
       if (len < MAXLEN && !hasdecimal) {
+        len = strlen(input);
+        //if (!len)
+        //   input[len++] = '0';
         input[len++] = '.';
         input[len]='\0';
         hasinput = TRUE;
@@ -437,10 +455,12 @@ void Process(enum GdIds id) {
         GT_SetGadgetAttrs(display, wp, NULL, GTST_String, input, TAG_END);
         return;
       }
+      return;
       break;
     case GD_BACKSPACE:
       if (waitingForOperand)
         return;
+      len = strlen(input);
       if (len > 0) {
         if (input[len-1] == '.')
           hasdecimal = FALSE;
@@ -623,15 +643,16 @@ void Process(enum GdIds id) {
       ;
       #endif
   }
-  // printf("id: %d input: %s (%f)\n", id, input,atof(input));
+  //printf("id: %d input: %s (%f)\n", id, input,atof(input));
   displayNum(res);
   GT_SetGadgetAttrs(display, wp, NULL, GTST_String, input, TAG_END);
 }
 
 void ClearEntry(void) {
   len = 1;
-  input[len-1] = '0';
-  input[len] = '\0';
+  input[0] = '0';
+  input[1] = '\0';
+  hasdecimal = FALSE;
   #ifdef USEMPFR
   mpfr_set_ui(res, 0, MPFR_RNDN);
   #else
