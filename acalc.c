@@ -10,6 +10,7 @@
 #include <proto/gadtools.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <exec/memory.h>
 #include <intuition/intuition.h>
 #include <intuition/gadgetclass.h>
 #include <libraries/gadtools.h>
@@ -210,6 +211,33 @@ UWORD fImageData[] = {
 
 struct Image Image = {0,0,39,13,2,NULL,0x03,0,NULL};
 
+/*
+ * Data for a busy pointer.
+ * This data must be in chip memory!!!
+ *
+ */
+UWORD *waitPointer;
+UWORD fwaitPointer[] =
+{
+	0x0000, 0x0000,	/* reserved, must be NULL */
+	0x0400, 0x07C0,
+	0x0000, 0x07C0,
+	0x0100, 0x0380,
+	0x0000, 0x07E0,
+	0x07C0, 0x1FF8,
+	0x1FF0, 0x3FEC,
+	0x3FF8, 0x7FDE,
+	0x3FF8, 0x7FBE,
+	0x7FFC, 0xFF7F,
+	0x7EFC, 0xFFFF,
+	0x7FFC, 0xFFFF,
+	0x3FF8, 0x7FFE,
+	0x3FF8, 0x7FFE,
+	0x1FF0, 0x3FFC,
+	0x07C0, 0x1FF8,
+	0x0000, 0x07E0,
+	0x0000, 0x0000	/* reserved, must be NULL */
+};
 
 /* Extra information for gadgets using Tags */
 ULONG GadgetTags[] = {
@@ -234,6 +262,9 @@ struct Gadget *gadgets[TOTALNUMOFGADGETS];
 struct Gadget *glist = NULL;
 struct Menu *menuStrip;
 
+
+extern struct Library *GfxBase;
+
 /* Prototyping */
 void ReAddGadgets(void);
 void Process(enum GdIds id);
@@ -256,6 +287,10 @@ void MoveDataToChip(void) {
     for (i=0; i<sizeof(fImageData)/sizeof(UWORD);i++)
       imgSquareRoot[i]=fImageData[i];
     Image.ImageData = imgSquareRoot;
+  }
+  if (waitPointer = (UWORD *)AllocMem(sizeof(fwaitPointer), MEMF_CHIP)) {
+    for (i=0; i<sizeof(fwaitPointer)/sizeof(UWORD);i++)
+      waitPointer[i] = fwaitPointer[i];
   }
 }
 
@@ -284,7 +319,6 @@ int main(int argc, char **argv) {
       int adjusty = (pubScreen->WBorTop+pubScreen->Font->ta_YSize+1) - 9; /* Infer window top border height from screen's info */
       /* Create the gadget list */
       if (gad1 = CreateContext(&glist)) {
-        printf("%X\n", glist);
         /* Create gadgets specify gadget kind, a Gadget, NewGadget data and extra tag info */
         for (i=0; i < TOTALNUMOFGADGETS; i++) {
           Gadgetdata[i].ng_VisualInfo = visual;
@@ -319,9 +353,9 @@ int main(int argc, char **argv) {
                            WA_Flags, WFLG_DRAGBAR    | WFLG_DEPTHGADGET |
                            WFLG_CLOSEGADGET | WFLG_ACTIVATE | WFLG_SMART_REFRESH,
                            WA_NewLookMenus, TRUE,
-                           WA_Gadgets, glist,
-                           WA_Title, "ACalc",
-                           WA_PubScreenName, "Workbench",
+                           WA_Gadgets, (LONG) glist,
+                           WA_Title, (LONG) "ACalc",
+                           WA_PubScreenName, (LONG)"Workbench",
                            TAG_DONE)) {
           if (menuStrip = CreateMenus(menu1, TAG_END)) {
             if (LayoutMenus(menuStrip, visual, GTMN_NewLookMenus, TRUE, TAG_END)) {
@@ -329,7 +363,7 @@ int main(int argc, char **argv) {
               if (SetMenuStrip(wp, menuStrip)) {
                 GT_RefreshWindow(wp, NULL); /* Update window */
                 ClearAll();
-                GT_SetGadgetAttrs(display, wp, NULL, GTST_String, "0", TAG_END);
+                GT_SetGadgetAttrs(display, wp, NULL, GTST_String, (LONG) "0", TAG_END);
                 EventLoop();
                 ClearMenuStrip(wp);
               }
@@ -359,8 +393,35 @@ int main(int argc, char **argv) {
 #endif
   if (imgSquareRoot)
     FreeMem(imgSquareRoot, sizeof(fImageData));
+  if (waitPointer)
+    FreeMem(waitPointer, sizeof(fwaitPointer));
   return(0);
 }
+
+BOOL beginWait(struct Window *win, struct Requester *waitRequest) {
+  InitRequester(waitRequest);
+  if (Request(waitRequest, win)) {
+    if (GfxBase->lib_Version >= 39) {
+      SetWindowPointer(win, WA_BusyPointer, TRUE, TAG_END);
+    } else {
+      SetPointer(win, waitPointer, 16, 16, -6, 0);
+    }
+    return(TRUE);
+  } else {
+    return(FALSE);
+  }
+}
+
+VOID endWait(struct Window *win, struct Requester *waitRequest) {
+  if (GfxBase->lib_Version >= 39) {
+    SetWindowPointer(win, WA_BusyPointer, FALSE, TAG_END);
+  } else {
+    ClearPointer(win);
+  }
+  EndRequest(waitRequest, win);
+}
+
+
 /*
 void ReAddGadgets(void) {
   struct Gadget *pgad;
@@ -472,7 +533,8 @@ void getNumFromInput(num *n, char *str) {
 
 void Process(enum GdIds id) {
   unsigned long int fac;
-
+  struct Requester req;
+  
   switch (id) {
     case GD_N0:
     case GD_N1:
@@ -500,7 +562,7 @@ void Process(enum GdIds id) {
         getNumFromInput(&res, input);
         #ifdef USEMPFR
         if (mpfr_zero_p(res)) {
-          GT_SetGadgetAttrs(display, wp, NULL, GTST_String, input, TAG_END);
+          GT_SetGadgetAttrs(display, wp, NULL, GTST_String, (LONG) input, TAG_END);
           return;
         }
         #else
@@ -523,7 +585,7 @@ void Process(enum GdIds id) {
         input[len]='\0';
         hasinput = TRUE;
         hasdecimal = TRUE;
-        GT_SetGadgetAttrs(display, wp, NULL, GTST_String, input, TAG_END);
+        GT_SetGadgetAttrs(display, wp, NULL, GTST_String, (LONG)input, TAG_END);
         return;
       }
       return;
@@ -618,17 +680,18 @@ void Process(enum GdIds id) {
       break;
     case GD_FACTORIAL:
       #ifdef USEMPFR
+      beginWait(wp, &req);
       fac = mpfr_get_ui(res, MPFR_RNDN);
-      //printf("fac of %d\n", fac);
       mpfr_fac_ui(res, fac, MPFR_RNDN);
+      endWait(wp, &req);
       #else
       if (res < 0) {
-        res = sqrt(-1);
+        res = 0.0/0.0;
         break;
       }
       fac = (unsigned long int)res;
       if (fac > 170) {
-        res = 1.0/0;
+        res = 1.0/0.0;
         break;
       }
       res = 1.0;
@@ -716,7 +779,7 @@ void Process(enum GdIds id) {
   }
   //printf("id: %d input: %s (%f)\n", id, input,atof(input));
   displayNum(res);
-  GT_SetGadgetAttrs(display, wp, NULL, GTST_String, input, TAG_END);
+  GT_SetGadgetAttrs(display, wp, NULL, GTST_String, (LONG)input, TAG_END);
 }
 
 void ClearEntry(void) {
