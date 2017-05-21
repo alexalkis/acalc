@@ -2,6 +2,9 @@
 A small gui calculator for Commodore Amiga (OS>=2.0)
 
 
+# Additional libraries #
+
+For higher accuracy the GMP and MPFR libraries come in handy.  Do the configuration as shown below, but without the '-m68020' at the end. Make, install. Make clean. Reconfigure and this time add the '-m68020'. DO NOT install.  Copy manually the lib adding the 020 to the name (e.g. cp .libs/libgmp.a /usr/local/amiga/m68k-amigaos/lib/libgmp020.a and cp src/.libs/libmpfr.a /usr/local/amiga/m68k-amigaos/lib/libmpfr020.a)
 
 # Gmp-6.1.0 #
 
