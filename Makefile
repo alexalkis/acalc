@@ -15,7 +15,7 @@ acalc020: acalc.c
 	ls -l acalc020
 
 release: acalc
-	$(ARC) a -o6 acalc-$(GIT_VERSION).lha acalc
+	$(ARC) a -o6 acalc-$(GIT_VERSION).lha acalc acalc020
 
 clean:
-	rm -f acalc acalc*.lha
+	rm -f acalc acalc020 acalc*.lha
