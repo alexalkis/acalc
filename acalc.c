@@ -4,7 +4,7 @@
 **  A small calculator.  (I only wanted to check out gadtools! Sorry :P)
 */
 
-#define USEMPFR
+//#define USEMPFR
 
 #include <proto/intuition.h>
 #include <proto/gadtools.h>
