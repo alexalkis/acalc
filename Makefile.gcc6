@@ -10,10 +10,10 @@ CFLAGS020 = -s -noixemul -Os -m68020 -lm -DGITVERSION=\"$(GIT_VERSION)\"
 
 ifeq "$(GCC_GT_30400)" "1"
   SUF=-gcc6
-  CFLAGS += -Xlinker  --allow-multiple-definition
-  CFLAGS020 += -Xlinker  --allow-multiple-definition
-  CFLAGSM := -D__WCHAR_TYPE__=char $(CFLAGSM) -Xlinker  --allow-multiple-definition
-  CFLAGSM020 := -D__WCHAR_TYPE__=char $(CFLAGSM020) -Xlinker  --allow-multiple-definition
+#  CFLAGS += -Xlinker  --allow-multiple-definition
+#  CFLAGS020 += -Xlinker  --allow-multiple-definition
+#  CFLAGSM := $(CFLAGSM) -Xlinker  --allow-multiple-definition
+#  CFLAGSM020 := $(CFLAGSM020) -Xlinker  --allow-multiple-definition
 endif
 
 
