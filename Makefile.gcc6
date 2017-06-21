@@ -1,0 +1,44 @@
+GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always --tags)
+GCC_GT_30400 := $(shell expr `m68k-amigaos-gcc -dumpversion | sed -e 's/\.\([0-9][0-9]\)/\1/g' -e 's/\.\([0-9]\)/0\1/g' -e 's/^[0-9]\{3,4\}$$/&00/'` \> 30400)
+
+ARC=/usr/local/amiga/bin/lha
+CC=m68k-amigaos-gcc
+CFLAGSM = -s -noixemul -Os -lmpfr -lgmp -lm -DGITVERSION=\"$(GIT_VERSION)\" -DUSEMPFR
+CFLAGSM020 = -s -noixemul -Os -m68020 -lmpfr020 -lgmp020 -lm -DGITVERSION=\"$(GIT_VERSION)\" -DUSEMPFR
+CFLAGS = -s -noixemul -Os -lm -DGITVERSION=\"$(GIT_VERSION)\"
+CFLAGS020 = -s -noixemul -Os -m68020 -lm -DGITVERSION=\"$(GIT_VERSION)\"
+
+ifeq "$(GCC_GT_30400)" "1"
+  SUF=-gcc6
+#  CFLAGS += -Xlinker  --allow-multiple-definition
+#  CFLAGS020 += -Xlinker  --allow-multiple-definition
+#  CFLAGSM := $(CFLAGSM) -Xlinker  --allow-multiple-definition
+#  CFLAGSM020 := $(CFLAGSM020) -Xlinker  --allow-multiple-definition
+endif
+
+
+all: acalc$(SUF) acalc020$(SUF) acalcm$(SUF) acalcm020$(SUF)
+
+acalc$(SUF): acalc.c
+	$(CC) -o acalc$(SUF) acalc.c $(CFLAGS) $(LDFLAGS)
+	ls -l acalc$(SUF)
+
+acalc020$(SUF): acalc.c
+	$(CC) -o acalc020$(SUF) acalc.c $(CFLAGS020) $(LDFLAGS)
+	ls -l acalc020$(SUF)
+
+acalcm$(SUF): acalc.c
+	$(CC) -o acalcm$(SUF) acalc.c $(CFLAGSM) $(LDFLAGS)
+	ls -l acalcm$(SUF)
+
+acalcm020$(SUF): acalc.c
+	$(CC) -o acalcm020$(SUF) acalc.c $(CFLAGSM020) $(LDFLAGS)
+	ls -l acalcm020$(SUF)
+
+
+release: acalc
+	$(ARC) a -o6 acalc-$(GIT_VERSION).lha acalc$(SUF) acalc020$(SUF) acalcm$(SUF) acalcm020$(SUF)
+	ls -l acalc-$(GIT_VERSION).lha
+
+clean:
+	rm -f acalc$(SUF) acalc020$(SUF) acalcm$(SUF) acalcm020$(SUF) acalc*.lha
