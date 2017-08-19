@@ -98,6 +98,7 @@ def build():
   make('{mpfr}')
   make('{mpfr}', 'install')
 
+  #have to find a workarround to link the below with libgmp020.a  
   make('{mpfr}', 'clean')
   rmtree('{stamps}/{mpfr}-configure')
   rmtree('{stamps}/{mpfr}-make')
