@@ -57,6 +57,7 @@ def build():
 
       
   unpack('{gmp}')
+  patch('{gmp}')
   configure('{gmp}',
             '--host=x86_64-pc-linux-gnu',
             '--enable-assembly=no',

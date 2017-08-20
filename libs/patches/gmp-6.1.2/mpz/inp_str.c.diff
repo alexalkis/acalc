@@ -1,0 +1,11 @@
+--- gmp-6.1.2/mpz/inp_str.c
++++ gmp-6.1.2/mpz/inp_str.c
+@@ -42,6 +42,8 @@ see https://www.gnu.org/licenses/.  */
+ 
+ #define digit_value_tab __gmp_digit_value_tab
+ 
++size_t mpz_inp_str_nowhite (mpz_ptr x, FILE *stream, int base, int c, size_t nread);
++
+ size_t
+ mpz_inp_str (mpz_ptr x, FILE *stream, int base)
+ {
