@@ -8,6 +8,7 @@ from os import environ
 import argparse
 import logging
 import platform
+import os
 
 URLS = \
   [
@@ -21,10 +22,11 @@ from common import * # NOQA
 
 def build():
   for var in environ.keys():
-    if var not in ['_', 'LOGNAME', 'HOME', 'SHELL', 'TMPDIR', 'PWD']:
+    if var not in ['PATH','_', 'LOGNAME', 'HOME', 'SHELL', 'TMPDIR', 'PWD']:
       del environ[var]
 
-  environ['PATH'] = '/usr/bin:/bin:/usr/local/amiga/bin'
+  #environ['PATH'] = '/usr/bin:/bin:/usr/local/amiga/bin'
+  #environ['PATH'] = os.environ['PATH']
   environ['LANG'] = 'C'
   environ['TERM'] = 'xterm'
 
@@ -89,7 +91,7 @@ def build():
              '--host=x86_64-pc-linux-gnu',
             '--enable-assembly=no',
             '--enable-shared=no',
-            'CFLAGS=-noixemul -fomit-frame-pointer -O3 -DMPFR_LCONV_DPTS=0 -I{target}/include -L{target}/lib',
+            'CFLAGS=-noixemul -fomit-frame-pointer -O3 -D_MPFR_H_HAVE_FILE -DMPFR_LCONV_DPTS=0 -I{target}/include -L{target}/lib',
             'CC=m68k-amigaos-gcc',
             'NM=m68k-amigaos-nm',
             'AR=m68k-amigaos-ar',
@@ -106,7 +108,7 @@ def build():
              '--host=x86_64-pc-linux-gnu',
             '--enable-assembly=no',
             '--enable-shared=no',
-            'CFLAGS=-noixemul -fomit-frame-pointer -O3 -DMPFR_LCONV_DPTS=0 -m68020 -I{target}/include -L{target}/lib',
+            'CFLAGS=-noixemul -fomit-frame-pointer -O3 -D_MPFR_H_HAVE_FILE -DMPFR_LCONV_DPTS=0 -m68020 -I{target}/include -L{target}/lib',
             'CC=m68k-amigaos-gcc',
             'NM=m68k-amigaos-nm',
             'AR=m68k-amigaos-ar',
