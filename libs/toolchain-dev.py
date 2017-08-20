@@ -115,7 +115,7 @@ def build():
             'RANLIB=m68k-amigaos-ranlib',
             '--prefix={target}')
   move('{target}/lib/libgmp.a','{target}/lib/libgmp.a_orig');
-  move('{target}/lib/libgmp020.a','{target}/lib/libgmp.a');
+  copy('{target}/lib/libgmp020.a','{target}/lib/libgmp.a');
   make('{mpfr}')
   copy('{build}/{mpfr}/src/.libs/libmpfr.a', '{target}/lib/libmpfr020.a')
   move('{target}/lib/libgmp.a_orig','{target}/lib/libgmp.a');
