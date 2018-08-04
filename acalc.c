@@ -32,6 +32,12 @@
 #include <mpfr.h>
 typedef mpfr_t num;
 #define BITSACCURACY (80)
+
+
+int isascii(int c) {
+   return (((c) & ~0x7F) == 0);
+}
+
 #else
 typedef double num;
 #endif
@@ -765,7 +771,7 @@ void Process(enum GdIds id) {
       break;
     case GD_CONSTANT_SECONDS_IN_YEAR:
       #ifdef USEMPFR
-      mpfr_set_d(res, 31557600, MPFR_RNDN);
+      mpfr_set_str(res, "31557600", 10, MPFR_RNDN);
       #else
       res = 31557600;
       #endif
@@ -780,6 +786,13 @@ void Process(enum GdIds id) {
   //printf("id: %d input: %s (%f)\n", id, input,atof(input));
   displayNum(res);
   GT_SetGadgetAttrs(display, wp, NULL, GTST_String, (LONG)input, TAG_END);
+  static LONG pmem = 0;
+  
+  LONG fsize = AvailMem(MEMF_FAST);
+  fsize += AvailMem(MEMF_CHIP);
+  if (pmem)
+    printf("Memory: %d\n", pmem-fsize);
+  pmem = fsize;
 }
 
 void ClearEntry(void) {

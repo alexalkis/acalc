@@ -10,10 +10,11 @@ import logging
 import platform
 import os
 
+#    'http://www.mpfr.org/mpfr-current/mpfr-3.1.5.tar.bz2'
 URLS = \
   [
     'https://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.bz2',
-    'http://www.mpfr.org/mpfr-current/mpfr-3.1.5.tar.bz2'
+    'https://www.mpfr.org/mpfr-current/mpfr-4.0.1.tar.bz2'
   ]
 
 
@@ -150,7 +151,7 @@ if __name__ == "__main__":
   setvar(top=path.abspath('.'))
 
   setvar(gmp='gmp-6.1.2',
-         mpfr='mpfr-3.1.5',
+         mpfr='mpfr-4.0.1',
          patches=path.join('{top}', 'patches'),
          stamps=path.join('{top}', '.build-dev', 'stamps'),
          build=path.join('{top}', '.build-dev', 'build'),
