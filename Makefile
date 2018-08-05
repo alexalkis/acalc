@@ -1,10 +1,14 @@
 GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always --tags)
 ARC=/usr/local/amiga/bin/lha
 CC=m68k-amigaos-gcc
-CFLAGSM = -s -noixemul -Os -lmpfr -lgmp -lm -DGITVERSION=\"$(GIT_VERSION)\" -DUSEMPFR -I/home/alex/foo/include -L/home/alex/foo/lib
-CFLAGSM020 = -s -noixemul -Os -m68020 -lmpfr020 -lgmp020 -lm -DGITVERSION=\"$(GIT_VERSION)\" -DUSEMPFR  -I/home/alex/foo/include -L/home/alex/foo/lib
+
+XTRALIBS = -lmpfr -lgmp -DUSEMPFR -I/home/alex/foo/include -L/home/alex/foo/lib
+XTRALIBS020 = -lmpfr020 -lgmp020 -DUSEMPFR -I/home/alex/foo/include -L/home/alex/foo/lib
+
 CFLAGS = -s -noixemul -Os -lm -DGITVERSION=\"$(GIT_VERSION)\"
-CFLAGS020 = -s -noixemul -Os -m68020 -lm -DGITVERSION=\"$(GIT_VERSION)\"
+CFLAGS020 = $(CFLAGS) -m68020
+CFLAGSM = $(CFLAGS) $(XTRALIBS)
+CFLAGSM020 = $(CFLAGS020) $(XTRALIBS020)
 
 all: acalc acalc020 acalcm acalcm020
 
