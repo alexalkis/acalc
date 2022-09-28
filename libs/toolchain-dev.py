@@ -14,7 +14,7 @@ import os
 URLS = \
   [
     'https://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.bz2',
-    'https://www.mpfr.org/mpfr-current/mpfr-4.0.1.tar.bz2'
+    'https://ftp.gnu.org/gnu/mpfr/mpfr-4.0.1.tar.bz2'
   ]
 
 

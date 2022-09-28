@@ -183,7 +183,7 @@ struct NewGadget Gadgetdata[] = {
 
 /* Image data, plane-by-plane, and one scanline at a time */
 UWORD *imgSquareRoot=NULL;
-UWORD fImageData[] = {
+__chip UWORD fImageData[] = {
 	/* Plane 1 */
   0x0000,0x0000,0x0200,
   0x0000,0x0000,0x0600,
@@ -215,15 +215,15 @@ UWORD fImageData[] = {
 };
 
 
-struct Image Image = {0,0,39,13,2,NULL,0x03,0,NULL};
+struct Image Image = {0,0,39,13,2,fImageData,0x03,0,NULL};
 
 /*
  * Data for a busy pointer.
  * This data must be in chip memory!!!
  *
  */
-UWORD *waitPointer;
-UWORD fwaitPointer[] =
+//UWORD *waitPointer;
+__chip UWORD waitPointer[] =
 {
 	0x0000, 0x0000,	/* reserved, must be NULL */
 	0x0400, 0x07C0,
@@ -285,6 +285,7 @@ void displayNum(num d);
 int calculate(num rightOperand, enum GdIds pendingOperator);
 void EventLoop(void);
 
+#ifdef CHIPMEMNOTSUPPORTED
 /* Gcc lacks the __chip fake keyword to place data in chip */
 /* So, we move data to chip memory here */
 void MoveDataToChip(void) {
@@ -299,6 +300,7 @@ void MoveDataToChip(void) {
       waitPointer[i] = fwaitPointer[i];
   }
 }
+#endif
 
 int main(int argc, char **argv) {
   APTR visual;
@@ -310,7 +312,7 @@ int main(int argc, char **argv) {
   APTR sqrtGadgetRender;
   int i;
 
-  MoveDataToChip();
+  //MoveDataToChip();
 #ifdef USEMPFR
   mpfr_init2(base, BITSACCURACY);
   mpfr_init2(factorSoFar, BITSACCURACY);
@@ -337,7 +339,7 @@ int main(int argc, char **argv) {
             if (i == 0) {
               display = gad1;
             }
-            if (Gadgetdata[i].ng_GadgetID == GD_SQRT && imgSquareRoot) {
+            if (Gadgetdata[i].ng_GadgetID == GD_SQRT /*&& imgSquareRoot*/) {
               sqrt = gadgets[i];
               sqrtGadgetRender = gadgets[i]->GadgetRender;
               sqrtSelectRender = gadgets[i]->SelectRender;
@@ -397,10 +399,12 @@ int main(int argc, char **argv) {
   mpfr_clear(res);
   mpfr_clear(operand);
 #endif
+#ifdef CHIPMEMNOTSUPPORTED
   if (imgSquareRoot)
     FreeMem(imgSquareRoot, sizeof(fImageData));
   if (waitPointer)
     FreeMem(waitPointer, sizeof(fwaitPointer));
+#endif
   return(0);
 }
 
